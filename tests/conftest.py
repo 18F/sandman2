@@ -37,6 +37,7 @@ def app(request):
             test_database_path),
         user_models=user_models,
         exclude_tables=exclude_tables)
+    application.config['SERVER_NAME'] = 'localhost:80'
     application.testing = True
 
     with application.test_request_context():

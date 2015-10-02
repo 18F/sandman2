@@ -4,6 +4,7 @@ import sys
 import datetime
 
 import pytest
+from flask import url_for
 from dateutil.parser import parse as parse_date
 from sqlalchemy.ext.automap import automap_base
 
@@ -19,8 +20,11 @@ def test_get_endpoints(app, client):
     expected = [
         {
             'name': service.__model__.__name__.lower(),
-            'link': service.__model__.__url__,
-            'meta': '{}/meta'.format(service.__model__.__url__),
+            'link': url_for(service.__name__.lower(), _external=True),
+            'meta': url_for(
+                '{}-meta'.format(service.__name__.lower()),
+                _external=True,
+            ),
         }
         for service in sorted(
             app.__services__,

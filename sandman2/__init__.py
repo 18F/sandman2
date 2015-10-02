@@ -1,7 +1,7 @@
 """*sandman2*'s main module."""
 
 # Third-party imports
-from flask import Flask, current_app, jsonify
+from flask import Flask, current_app, url_for, jsonify
 from sqlalchemy.ext.automap import automap_base
 
 # Application imports
@@ -69,8 +69,11 @@ def _register_endpoint_list(app):
         endpoints = [
             {
                 'name': service.__model__.__name__.lower(),
-                'link': service.__model__.__url__,
-                'meta': '{}/meta'.format(service.__model__.__url__),
+                'link': url_for(service.__name__.lower(), _external=True),
+                'meta': url_for(
+                    '{}-meta'.format(service.__name__.lower()),
+                    _external=True,
+                ),
             }
             for service in sorted(
                 getattr(app, '__services__', set()),
@@ -122,6 +125,7 @@ def register_service(cls, primary_key_type='int'):
         )
         current_app.add_url_rule(
             '{resource}meta/'.format(resource=cls.__model__.__url__),
+            endpoint='{}-meta'.format(cls.__name__.lower()),
             view_func=view_func,
             methods=['GET'],
         )
