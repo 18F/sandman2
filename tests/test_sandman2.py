@@ -13,6 +13,23 @@ from sandman2 import model, get_app
 from tests.resources import *  # noqa
 
 
+def test_get_endpoints(app, client):
+    res = client.get('/')
+    assert 'endpoints' in res.json
+    expected = [
+        {
+            'name': service.__model__.__name__.lower(),
+            'link': service.__model__.__url__,
+            'meta': '{}/meta'.format(service.__model__.__url__),
+        }
+        for service in sorted(
+            app.__services__,
+            key=lambda service: service.__model__.__name__.lower(),
+        )
+    ]
+    assert res.json['endpoints'] == expected
+
+
 def test_get_resource(client):
     """Can we GET a resource properly?"""
     res = client.get('/track/1')

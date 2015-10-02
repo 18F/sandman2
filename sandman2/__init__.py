@@ -48,6 +48,7 @@ def get_app(
     app.config['SQLALCHEMY_DATABASE_URI'] = database_uri
     db.init_app(app)
     admin = Admin(app, base_template='layout.html')
+    _register_endpoint_list(app)
     _register_error_handlers(app)
     if user_models:
         with app.app_context():
@@ -58,10 +59,31 @@ def get_app(
     return app
 
 
-def _register_error_handlers(app):
-    """Register error-handlers for the application.
+def _register_endpoint_list(app):
+    """Register list of endpoints for the application.
 
-    :param app: The application instance
+    :param Flask app: The application instance
+    """
+    @app.route('/', methods=['GET'])
+    def endpoints():
+        endpoints = [
+            {
+                'name': service.__model__.__name__.lower(),
+                'link': service.__model__.__url__,
+                'meta': '{}/meta'.format(service.__model__.__url__),
+            }
+            for service in sorted(
+                getattr(app, '__services__', set()),
+                key=lambda service: service.__model__.__name__.lower(),
+            )
+        ]
+        return jsonify({'endpoints': endpoints})
+
+
+def _register_error_handlers(app):
+    """Register error handlers for the application.
+
+    :param Flask app: The application instance
     """
     @app.errorhandler(BadRequestException)
     @app.errorhandler(ForbiddenException)
