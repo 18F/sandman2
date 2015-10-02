@@ -5,7 +5,7 @@ from decimal import Decimal
 
 # Third-party imports
 from sqlalchemy.inspection import inspect
-from flask.ext.sqlalchemy import SQLAlchemy  # pylint: disable=import-error,no-name-in-module
+from flask.ext.sqlalchemy import SQLAlchemy
 
 db = SQLAlchemy()
 
@@ -63,9 +63,7 @@ class Model(object):
 
         :rtype: string
         """
-        return list(
-            self.__table__.primary_key.columns)[  # pylint: disable=no-member
-                0].name
+        return list(self.__table__.primary_key.columns)[0].name
 
     def to_dict(self):
         """Return the resource as a dictionary.
@@ -87,8 +85,7 @@ class Model(object):
 
         """
         link_dict = {'self': self.resource_uri()}
-        for relationship in inspect(  # pylint: disable=maybe-no-member
-                self.__class__).relationships:
+        for relationship in inspect(self.__class__).relationships:
             if 'collection' not in relationship.key:
                 instance = getattr(self, relationship.key)
                 if instance:
@@ -101,7 +98,7 @@ class Model(object):
         :rtype: str
 
         """
-        return self.__url__ + '/' + str(getattr(self, self.primary_key()))
+        return '{}{}/'.format(self.__url__, getattr(self, self.primary_key()))
 
     def update(self, attributes):
         """Update the current instance based on attribute->value items in

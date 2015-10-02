@@ -115,22 +115,31 @@ def register_service(cls, primary_key_type='int'):
 
     if 'GET' in methods:  # pylint: disable=no-member
         current_app.add_url_rule(
-            cls.__model__.__url__, defaults={'resource_id': None},
+            cls.__model__.__url__,
+            defaults={'resource_id': None},
             view_func=view_func,
-            methods=['GET'])
+            methods=['GET'],
+        )
         current_app.add_url_rule(
-            '{resource}/meta'.format(resource=cls.__model__.__url__),
+            '{resource}meta/'.format(resource=cls.__model__.__url__),
             view_func=view_func,
-            methods=['GET'])
+            methods=['GET'],
+        )
     if 'POST' in methods:  # pylint: disable=no-member
         current_app.add_url_rule(
-            cls.__model__.__url__, view_func=view_func, methods=['POST', ])
+            cls.__model__.__url__,
+            view_func=view_func,
+            methods=['POST'],
+        )
     current_app.add_url_rule(
-        '{resource}/<{pk_type}:{pk}>'.format(
+        '{resource}<{pk_type}:{pk}>/'.format(
             resource=cls.__model__.__url__,
-            pk='resource_id', pk_type=primary_key_type),
+            pk='resource_id',
+            pk_type=primary_key_type,
+        ),
         view_func=view_func,
-        methods=methods - set(['POST']))
+        methods=methods - set(['POST']),
+    )
 
 
 def _reflect_all(exclude_tables=None, admin=None, Base=AutomapModel):
@@ -151,7 +160,7 @@ def register_model(cls, admin=None):
 
     :param cls: Class deriving from :class:`sandman2.models.Model`
     """
-    cls.__url__ = '/{}'.format(cls.__name__.lower())
+    cls.__url__ = '/{}/'.format(cls.__name__.lower())
     service_class = type(
         cls.__name__ + 'Service',
         (Service,),
