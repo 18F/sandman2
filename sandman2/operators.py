@@ -63,7 +63,8 @@ class Like(Operator):
     def filter(self, column, values):
         attr = 'ilike' if current_app.config.get('CASE_INSENSITIVE') else 'like'
         method = getattr(column, attr)
-        return sa.and_(*[method(value) for value in values])
+        result = sa.and_(*[method(value) for value in values])
+        return result
 
 class GreaterThan(Operator):
 
@@ -83,7 +84,7 @@ class LessThan(Operator):
 class LessEqual(Operator):
 
     def filter(self, column, values):
-        return column < min(values)
+        return column <= min(values)
 
 operators = {
     'eq': Equal(),

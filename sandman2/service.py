@@ -2,7 +2,7 @@
 ORM models or a database introspection."""
 
 # Third-party imports
-from flask import request, make_response
+from flask import request, make_response, current_app
 import flask
 from flask.views import MethodView
 
@@ -13,7 +13,7 @@ from sandman2.decorators import etag, validate_fields
 from sandman2 import utils, operators
 
 
-RESERVED_PARAMETERS = ['page', 'sort']
+RESERVED_PARAMETERS = ['page', 'sort', 'per_page']
 
 
 def add_link_headers(response, links):
@@ -46,14 +46,19 @@ def order_query(model, query, params):
         for key in params.getlist('sort')
     ])
 
-
-def get_page(query, page):
+def coerce(val, type_to, name):
+    if val is None:
+        return val
     try:
-        page = int(page)
+        val = type_to(val)
     except (TypeError, ValueError):
-        raise BadRequestException('Invalid page: "{0}"'.format(page))
-    return query.paginate(page)
+        raise BadRequestException('Invalid {0}: "{1}"'.format(name, val))
+    return val
 
+def get_page(query, page, per_page):
+    page = coerce(page, int, 'page')
+    per_page = coerce(per_page, int, 'per_page')
+    return query.paginate(page, per_page=per_page)
 
 def format_pagination(page):
     return {
@@ -153,9 +158,13 @@ class Service(MethodView):
         :param resource_id: The value of the resource's primary key
         """
         resource = self._resource(resource_id)
+        if not resource:
+            raise NotFoundException()
         error_message = is_valid_method(self.__model__, resource)
         if error_message:
             raise BadRequestException(error_message)
+        if not request.json:
+            raise BadRequestException('No JSON data received')
         resource.update(request.json)
         db.session().merge(resource)
         db.session().commit()
@@ -197,7 +206,6 @@ class Service(MethodView):
         :returns: ``HTTP 201`` if a new resource is created
         :returns: ``HTTP 200`` if a resource is updated
         :returns: ``HTTP 400`` if the request is malformed or missing data
-        :returns: ``HTTP 404`` if the resource is not found
         """
         resource = self.__model__.query.get(resource_id)
         if resource:
@@ -242,7 +250,8 @@ class Service(MethodView):
         query = self.__model__.query
         query = filter_query(self.__model__, query, request.args)
         query = order_query(self.__model__, query, request.args)
-        return get_page(query, request.args.get('page', 1))
+        return get_page(query, request.args.get('page', 1),
+            request.args.get('per_page', None))
 
     @staticmethod
     def _no_content_response():

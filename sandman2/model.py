@@ -1,6 +1,7 @@
 """Module containing code related to *sandman2* ORM models."""
 
 # Standard library imports
+import datetime
 from decimal import Decimal
 
 # Third-party imports
@@ -23,14 +24,15 @@ class Model(object):
     __version__ = '1'
 
     #: The HTTP methods this resource supports (default=all).
-    __methods__ = set([
+    __methods__ = {
         'GET',
         'POST',
         'PUT',
         'PATCH',
         'DELETE',
         'HEAD',
-        'OPTIONS'])
+        'OPTIONS'
+        }
 
     @classmethod
     def required(cls):
@@ -42,7 +44,8 @@ class Model(object):
         """
         columns = []
         for column in cls.__table__.columns:  # pylint: disable=no-member
-            if not column.nullable and not column.primary_key:
+            is_autoincrement = 'int' in str(column.type).lower() and column.autoincrement
+            if (not column.nullable and not column.primary_key) or (column.primary_key and not is_autoincrement):
                 columns.append(column.name)
         return columns
 
@@ -77,6 +80,8 @@ class Model(object):
             value = result_dict[column] = getattr(self, column, None)
             if isinstance(value, Decimal):
                 result_dict[column] = float(result_dict[column])
+            elif isinstance(value, datetime.datetime):
+                result_dict[column] = value.isoformat()
         return result_dict
 
     def links(self):

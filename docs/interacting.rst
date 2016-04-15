@@ -14,7 +14,7 @@ resources (i.e. data returned from a ``SELECT * FROM foo`` statement)
 is called a ``collection``. To retrieve a ``collection`` of resources from your
 API, make a HTTP ``GET`` call to the resource's base URL. By default, this is
 set to ``/<table_name_in_lowercase>``. If you had an ``Artist`` table in your
-database, you would use the following ``curl`` command to retrieve the collection 
+database, you would use the following ``curl`` command to retrieve the collection
 of all ``Artist`` resources::
 
     $ curl http://127.0.0.1:5000/artist
@@ -151,3 +151,45 @@ Possible HTTP status codes for response
 * ``200 OK`` if the resource was found and updated
 * ``201 Created`` if the resource was not found and a new resource was created
 * ``400 Bad Request`` if the request is malformed or missing data
+
+Filtering
+---------
+
+Sandman2 supports equality filtering by specific field
+names::
+
+    $ curl http://127.0.0.1:5000/artist/Name=Aerosmith
+
+    $ curl http://127.0.0.1:5000/artist/Name=Aerosmith&ArtistId=3
+
+and inequality filtering, by joining the abbreviation for
+the operator to the field name with `__`; so to filter for
+`ArtistId > 3`::
+
+    $ curl http://127.0.0.1:5000/artist?ArtistId__gt=3
+
+Available operators:
+
+* `ne` (Not Equal)
+* `gt` (Greater Than)
+* `gte` (Greater Than or Equal To)
+* `lt` (Less Than)
+* `lte` (Less Than or Equal To)
+* `like`: (Like)
+
+The `like` operator requires the use of the SQL `%` as
+a wildcard - which should be escaped as `%25` in URLs.
+So, for example, to filter for artists with "Bill" anywhere
+within their names::
+
+    $ curl http://127.0.0.1:5000/artist?Name__like=%25Bill%25
+
+Pagination
+----------
+
+`page` and `per_page` default to 1 and 20, respectively,
+but can be specified as parameters, so::
+
+    $ curl http://127.0.0.1:5000/artist?per_page=5&page=3
+
+Gets the third page of five records each.

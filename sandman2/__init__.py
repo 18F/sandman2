@@ -3,6 +3,8 @@
 # Third-party imports
 from flask import Flask, current_app, jsonify
 from sqlalchemy.ext.automap import automap_base
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.sql import sqltypes
 
 # Application imports
 from sandman2.exception import (
@@ -20,7 +22,7 @@ from sandman2.model import db, Model
 from sandman2.admin import CustomAdminView
 from flask.ext.admin import Admin
 
-__version__ = '0.0.5'
+__version__ = '0.0.7'
 
 # Augment sandman2's Model class with the Automap and Flask-SQLAlchemy model
 # classes
@@ -32,7 +34,8 @@ def get_app(
         exclude_tables=None,
         user_models=None,
         reflect_all=True,
-        Base=AutomapModel):
+        Base=AutomapModel,
+        read_only=False):
     """Return an application instance connected to the database described in
     *database_uri*.
 
@@ -43,18 +46,20 @@ def get_app(
                              API service
     :param bool reflect_all: Include all database tables in the API service
     :param automap.Base Base: Automap base class
+    :param bool read_only: Only allow HTTP GET commands for all endpoints
     """
     app = Flask('sandman2')
     app.config['SQLALCHEMY_DATABASE_URI'] = database_uri
+    app.config['SANDMAN2_READ_ONLY'] = read_only
     db.init_app(app)
-    admin = Admin(app, base_template='layout.html')
+    admin = Admin(app, base_template='layout.html', template_mode='bootstrap3')
     _register_error_handlers(app)
     if user_models:
         with app.app_context():
             _register_user_models(user_models, admin, Base=Base)
     elif reflect_all:
         with app.app_context():
-            _reflect_all(exclude_tables, admin, Base=Base)
+            _reflect_all(exclude_tables, admin, read_only, Base=Base)
     return app
 
 
@@ -79,7 +84,7 @@ def _register_error_handlers(app):
         return response
 
 
-def register_service(cls, primary_key_type='int'):
+def register_service(cls, primary_key_type):
     """Register an API service endpoint.
 
     :param cls: The class to register
@@ -108,10 +113,10 @@ def register_service(cls, primary_key_type='int'):
             resource=cls.__model__.__url__,
             pk='resource_id', pk_type=primary_key_type),
         view_func=view_func,
-        methods=methods - set(['POST']))
+        methods=methods - {'POST'})
 
 
-def _reflect_all(exclude_tables=None, admin=None, Base=AutomapModel):
+def _reflect_all(exclude_tables=None, admin=None, read_only=False, Base=AutomapModel):
     """Register all tables in the given database as services.
 
     :param list exclude_tables: A list of tables to exclude from the API
@@ -121,6 +126,8 @@ def _reflect_all(exclude_tables=None, admin=None, Base=AutomapModel):
     for cls in Base.classes:
         if exclude_tables and cls.__table__.name in exclude_tables:
             continue
+        if read_only:
+            cls.__methods__ = {'GET'}
         register_model(cls, admin)
 
 
@@ -137,7 +144,27 @@ def register_model(cls, admin=None):
             '__model__': cls,
             '__version__': __version__,
         })
-    register_service(service_class)
+
+    # inspect primary key
+    cols = list(cls().__table__.primary_key.columns)
+
+    # composite keys not supported (yet)
+    primary_key_type = 'string'
+    if len(cols) == 1:
+        col_type = cols[0].type
+        # types defined at http://flask.pocoo.org/docs/0.10/api/#url-route-registrations
+        if isinstance(col_type, sqltypes.String):
+            primary_key_type = 'string'
+        elif isinstance(col_type, sqltypes.Integer):
+            primary_key_type = 'int'
+        elif isinstance(col_type, sqltypes.Numeric):
+            primary_key_type = 'float'
+        else:
+            # unsupported primary key type
+            primary_key_type = 'string'
+
+    # registration
+    register_service(service_class, primary_key_type)
     if admin is not None:
         admin.add_view(CustomAdminView(cls, db.session))
 

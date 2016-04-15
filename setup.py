@@ -54,10 +54,11 @@ setup(
     install_requires=[
         'Flask>=0.10.1',
         'Flask-SQLAlchemy>=1.0',
-        'Flask-Admin>=1.0.8',
         'WebTest>=2.0.18',
         'python-dateutil>=2.4.2',
         'six>=1.9.0',
+        'pytest-flask==0.4.0', 
+        'Flask-Admin>=1.0.9',
         ],
     cmdclass={'test': PyTest},
     author_email='jeff@jeffknupp.com',
@@ -73,6 +74,7 @@ setup(
     platforms='any',
     test_suite='tests.test_sandman2',
     zip_safe=False,
+    package_data={'sandman2': ['templates/**.html']},
     classifiers=[
         'Programming Language :: Python',
         'Programming Language :: Python :: 2',

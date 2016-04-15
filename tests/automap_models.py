@@ -11,6 +11,8 @@ class User(AutomapModel):
         return self.name
     __unicode__ = __str__
 
+    __unicode__ = __str__
+
 
 class Blog(AutomapModel):
 
@@ -22,6 +24,8 @@ class Blog(AutomapModel):
         return self.name
     __unicode__ = __str__
 
+    __unicode__ = __str__
+
 class Post(AutomapModel):
 
     """An individual blog post."""
@@ -30,4 +34,5 @@ class Post(AutomapModel):
 
     def __str__(self):
         return self.title
+        
     __unicode__ = __str__
