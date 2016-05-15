@@ -115,6 +115,18 @@ def register_service(cls, primary_key_type):
         view_func=view_func,
         methods=methods - {'POST'})
 
+def unregister_services(to_keep):
+    """Unregister endpoints for deleted tables.
+
+    :param to_keep: List of endpoints *not* to unregister;
+      all ``current_app``'s other services will be unregistered.
+
+    Call when tables may have been deleted from data source.
+    """
+
+    current_app.__services__ = {s for s in current_app.__services__
+        if s.__model__.__table__.name in to_keep}
+
 
 def _reflect_all(exclude_tables=None, admin=None, read_only=False, Base=AutomapModel):
     """Register all tables in the given database as services.
