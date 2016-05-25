@@ -124,6 +124,7 @@ def unregister_services(to_keep):
     Call when tables may have been deleted from data source.
     """
 
+    current_app.__services__ = getattr(current_app, '__services__', set())
     current_app.__services__ = {s for s in current_app.__services__
         if s.__model__.__table__.name in to_keep}
 
